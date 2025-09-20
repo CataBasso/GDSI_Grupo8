@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarDays, DollarSign, User, Plus, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Gasto, Participante } from "@/pages/Index";
-
 interface GastosTabProps {
   gastos: Gasto[];
   participantes: Participante[];
@@ -29,19 +28,32 @@ const categorias = [
   { value: "otros", label: "Otros" }
 ];
 
-const getCategoriaColor = (categoria: string) => {
-  const colors: Record<string, string> = {
+export const getCategoriaColor = (categoria: string, formato: string) => {
+  const hexColors: Record<string, string> = {
+    mantenimiento: "#3b82f6",
+    limpieza: "#84cc16",
+    seguridad: "#ef4444",
+    jardineria: "#b664ecff",
+    mejoras: "#8b5cf6",
+    administracion: "#f97316",
+    servicios: "#06b6d4",
+    otros: "#f59e0b"
+  };
+  const classColors: Record<string, string> = {
     mantenimiento: "bg-blue-100 text-blue-800",
-    limpieza: "bg-green-100 text-green-800", 
+    limpieza: "bg-lime-100 text-lime-800",
     seguridad: "bg-red-100 text-red-800",
-    jardineria: "bg-emerald-100 text-emerald-800",
+    jardineria: "bg-violet-100 text-violet-800",
     mejoras: "bg-purple-100 text-purple-800",
     administracion: "bg-orange-100 text-orange-800",
     servicios: "bg-cyan-100 text-cyan-800",
-    otros: "bg-gray-100 text-gray-800"
+    otros: "bg-amber-100 text-amber-800"
   };
-  return colors[categoria] || colors.otros;
-};
+  if (formato === 'hex') {
+    return hexColors[categoria] || hexColors.otros;
+  }
+  return classColors[categoria] || classColors.otros;
+}
 
 export const GastosTab = ({ gastos, participantes, usuarioActual, onAgregarGasto }: GastosTabProps) => {
   const [open, setOpen] = useState(false);
@@ -238,8 +250,8 @@ export const GastosTab = ({ gastos, participantes, usuarioActual, onAgregarGasto
             <div className="space-y-4">
               {gastos.map((gasto) => (
                 <div key={gasto.id} className={`p-4 rounded-lg border hover:shadow-md transition-shadow ${
-                  gasto.participante === usuarioActual.nombre 
-                    ? "bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20" 
+                  gasto.participante === usuarioActual.nombre
+                    ? "bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20"
                     : "bg-gradient-to-r from-background to-accent/5"
                 }`}>
                   <div className="flex justify-between items-start mb-2">
@@ -249,7 +261,7 @@ export const GastosTab = ({ gastos, participantes, usuarioActual, onAgregarGasto
                         <Badge variant="default" className="text-xs">Mi gasto</Badge>
                       )}
                     </div>
-                    <Badge className={getCategoriaColor(gasto.categoria)}>
+                    <Badge className={getCategoriaColor(gasto.categoria, '')}>
                       {categorias.find(c => c.value === gasto.categoria)?.label}
                     </Badge>
                   </div>

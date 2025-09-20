@@ -123,7 +123,7 @@ const Index = () => {
                 <Building2 className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">ConsorcioApp</h1>
+                <h1 className="text-2xl font-bold text-foreground">MiConsorcio</h1>
                 <p className="text-sm text-muted-foreground">Consorcio colaborativo - Edificio San Martín 1250</p>
               </div>
             </div>

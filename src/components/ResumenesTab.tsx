@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, DollarSign, Users, Receipt, Calendar, PieChart as PieChartIcon } from "lucide-react";
+import { getCategoriaColor } from "./GastosTab";
 import type { Gasto, Participante } from "@/pages/Index";
 
 interface ResumenesTabProps {
@@ -11,7 +12,7 @@ interface ResumenesTabProps {
   participantes: Participante[];
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+//const COLORS = ['#3b82f6', '#b664ecff', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
 
 export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
   const resumenData = useMemo(() => {
@@ -208,7 +209,7 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
                     label={({ porcentaje }) => `${porcentaje}%`}
                   >
                     {resumenData.dataPieChart.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={getCategoriaColor(entry.name.toLowerCase(), 'hex')} />
                     ))}
                   </Pie>
                   <Tooltip 
@@ -221,6 +222,20 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
                 No hay datos para mostrar
               </div>
             )}
+            <div className="flex flex-wrap gap-3">
+              {resumenData.dataPieChart.map(categoria => (
+              <div key={categoria.name} className="flex items-center gap-2 bg-muted/40 rounded px-2 py-1 mb-1">
+                <div
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: getCategoriaColor(categoria.name.toLowerCase(), 'hex') }}
+                />
+                <span className="text-sm whitespace-nowrap">{categoria.name}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                ${categoria.value.toLocaleString('es-AR')}
+                </span>
+              </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -286,31 +301,6 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
           )}
         </CardContent>
       </Card>
-
-      {/* Leyenda para el gráfico de categorías */}
-      {resumenData.dataPieChart.length > 0 && (
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg">Leyenda de Categorías</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {resumenData.dataPieChart.map((categoria, index) => (
-                <div key={categoria.name} className="flex items-center gap-2">
-                  <div 
-                    className="w-4 h-4 rounded-full" 
-                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                  />
-                  <span className="text-sm">{categoria.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ${categoria.value.toLocaleString('es-AR')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

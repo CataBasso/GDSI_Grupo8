@@ -18,10 +18,10 @@ All colors MUST be HSL.
     --popover-foreground: 222.2 84% 4.9%;
 
     /* Professional blue theme for consortium management */
-    --primary: 214 90% 52%;
-    --primary-foreground: 0 0% 98%;
-    --primary-light: 214 90% 65%;
-    --primary-dark: 214 90% 42%;
+    --primary: 160 42% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 168 64% 75%;
+    --primary-dark: 162 51% 35%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
