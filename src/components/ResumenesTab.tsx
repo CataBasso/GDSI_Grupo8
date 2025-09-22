@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, DollarSign, Users, Receipt, Calendar, PieChart as PieChartIcon } from "lucide-react";
-import { getCategoriaColor } from "./GastosTab";
 import type { Gasto, Participante } from "@/pages/Index";
 
 interface ResumenesTabProps {
@@ -12,7 +11,20 @@ interface ResumenesTabProps {
   participantes: Participante[];
 }
 
-//const COLORS = ['#3b82f6', '#b664ecff', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+export const getCategoriaColorHex = (categoria: string) => {
+  const hexColors: Record<string, string> = {
+    Mantenimiento: "#3b82f6",
+    Limpieza: "#84cc16",
+    Seguridad: "#ef4444",
+    Jardineria: "#b664ecff",
+    Mejoras: "#8b5cf6",
+    Administracion: "#f97316",
+    Servicios: "#06b6d4",
+    Otros: "#f59e0b"
+  };
+  return hexColors[categoria] || hexColors.otros;
+}
+
 
 export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
   const resumenData = useMemo(() => {
@@ -21,7 +33,7 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
       const gastosDelParticipante = gastos.filter(g => g.participante === participante.nombre);
       const totalGastado = gastosDelParticipante.reduce((sum, g) => sum + g.monto, 0);
       const cantidadGastos = gastosDelParticipante.length;
-      
+
       return {
         ...participante,
         totalGastado,
@@ -209,7 +221,7 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
                     label={({ porcentaje }) => `${porcentaje}%`}
                   >
                     {resumenData.dataPieChart.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={getCategoriaColor(entry.name.toLowerCase(), 'hex')} />
+                      <Cell key={`cell-${index}`} fill={getCategoriaColorHex(entry.name)} />
                     ))}
                   </Pie>
                   <Tooltip 
@@ -227,7 +239,7 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
               <div key={categoria.name} className="flex items-center gap-2 bg-muted/40 rounded px-2 py-1 mb-1">
                 <div
                 className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: getCategoriaColor(categoria.name.toLowerCase(), 'hex') }}
+                style={{ backgroundColor: getCategoriaColorHex(categoria.name) }}
                 />
                 <span className="text-sm whitespace-nowrap">{categoria.name}</span>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">

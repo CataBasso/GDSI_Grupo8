@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Users, FileText, PlusCircle, User } from "lucide-react";
+import { Building2, FileText, PlusCircle, User, Moon, Sun } from "lucide-react";
 import { GastosTab } from "@/components/GastosTab";
-import { ParticipantesTab } from "@/components/ParticipantesTab";
 import { ResumenesTab } from "@/components/ResumenesTab";
 
 export interface Gasto {
@@ -12,6 +11,7 @@ export interface Gasto {
   participante: string;
   fecha: string;
   categoria: string;
+  comprobante: string
 }
 
 export interface Participante {
@@ -40,7 +40,8 @@ const Index = () => {
       monto: 25000,
       participante: "María González",
       fecha: "2024-01-15",
-      categoria: "mantenimiento"
+      categoria: "mantenimiento",
+      comprobante: ""
     },
     {
       id: "2", 
@@ -48,7 +49,8 @@ const Index = () => {
       monto: 85000,
       participante: "Carlos Rodriguez",
       fecha: "2024-01-10",
-      categoria: "mejoras"
+      categoria: "mejoras",
+      comprobante: ""
     },
     {
       id: "3",
@@ -56,7 +58,8 @@ const Index = () => {
       monto: 15000,
       participante: "Ana Martínez",
       fecha: "2024-01-08",
-      categoria: "limpieza"
+      categoria: "limpieza",
+      comprobante: ""
     },
     {
       id: "4",
@@ -64,7 +67,8 @@ const Index = () => {
       monto: 45000,
       participante: "Juan Pérez",
       fecha: "2024-01-05",
-      categoria: "mantenimiento"
+      categoria: "mantenimiento",
+      comprobante: ""
     }
   ]);
 
@@ -80,7 +84,7 @@ const Index = () => {
     },
     {
       id: "2",
-      nombre: "Carlos Rodriguez", 
+      nombre: "Carlos Rodriguez",
       email: "carlos@email.com",
       telefono: "+54 11 9876-5432",
       unidad: "1B",
@@ -139,14 +143,14 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <Tabs defaultValue="gastos" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur-sm border shadow-sm">
-              <TabsTrigger 
-                value="gastos" 
+              <TabsTrigger
+                value="gastos"
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <PlusCircle className="w-4 h-4" />
                 Mis Gastos
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="resumenes"
                 className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
@@ -156,7 +160,7 @@ const Index = () => {
             </TabsList>
 
             <TabsContent value="gastos" className="space-y-6">
-              <GastosTab 
+              <GastosTab
                 gastos={gastos}
                 participantes={participantes}
                 usuarioActual={USUARIO_ACTUAL}
@@ -165,7 +169,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="resumenes" className="space-y-6">
-              <ResumenesTab 
+              <ResumenesTab
                 gastos={gastos}
                 participantes={participantes}
               />

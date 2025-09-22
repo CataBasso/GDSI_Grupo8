@@ -28,17 +28,7 @@ const categorias = [
   { value: "otros", label: "Otros" }
 ];
 
-export const getCategoriaColor = (categoria: string, formato: string) => {
-  const hexColors: Record<string, string> = {
-    mantenimiento: "#3b82f6",
-    limpieza: "#84cc16",
-    seguridad: "#ef4444",
-    jardineria: "#b664ecff",
-    mejoras: "#8b5cf6",
-    administracion: "#f97316",
-    servicios: "#06b6d4",
-    otros: "#f59e0b"
-  };
+export const getCategoriaColorClass = (categoria: string) => {
   const classColors: Record<string, string> = {
     mantenimiento: "bg-blue-100 text-blue-800",
     limpieza: "bg-lime-100 text-lime-800",
@@ -49,25 +39,24 @@ export const getCategoriaColor = (categoria: string, formato: string) => {
     servicios: "bg-cyan-100 text-cyan-800",
     otros: "bg-amber-100 text-amber-800"
   };
-  if (formato === 'hex') {
-    return hexColors[categoria] || hexColors.otros;
-  }
   return classColors[categoria] || classColors.otros;
 }
 
-export const GastosTab = ({ gastos, participantes, usuarioActual, onAgregarGasto }: GastosTabProps) => {
+
+export const GastosTab = ({ gastos, usuarioActual, onAgregarGasto }: GastosTabProps) => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     descripcion: "",
     monto: "",
     fecha: "",
-    categoria: ""
+    categoria: "",
+    comprobante: ""
   });
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.descripcion || !formData.monto || !formData.fecha || !formData.categoria) {
       toast({
         title: "Error",
@@ -81,16 +70,18 @@ export const GastosTab = ({ gastos, participantes, usuarioActual, onAgregarGasto
       descripcion: formData.descripcion,
       monto: parseFloat(formData.monto),
       fecha: formData.fecha,
-      categoria: formData.categoria
+      categoria: formData.categoria,
+      comprobante: formData.comprobante
     });
 
     setFormData({
       descripcion: "",
       monto: "",
       fecha: "",
-      categoria: ""
+      categoria: "",
+      comprobante: ""
     });
-    
+
     setOpen(false);
     toast({
       title: "Gasto agregado",
@@ -177,6 +168,21 @@ export const GastosTab = ({ gastos, participantes, usuarioActual, onAgregarGasto
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="comprobante">Comprobante (opcional)</Label>
+                <Input
+                  id="comprobante"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      setFormData({ ...formData, comprobante: url });
+                    }
+                  }}
+                />
+              </div>
               <Button type="submit" className="w-full">
                 Registrar Gasto
               </Button>
@@ -261,7 +267,7 @@ export const GastosTab = ({ gastos, participantes, usuarioActual, onAgregarGasto
                         <Badge variant="default" className="text-xs">Mi gasto</Badge>
                       )}
                     </div>
-                    <Badge className={getCategoriaColor(gasto.categoria, '')}>
+                    <Badge className={getCategoriaColorClass(gasto.categoria)}>
                       {categorias.find(c => c.value === gasto.categoria)?.label}
                     </Badge>
                   </div>
@@ -280,6 +286,28 @@ export const GastosTab = ({ gastos, participantes, usuarioActual, onAgregarGasto
                       <CalendarDays className="w-4 h-4" />
                       <span>{new Date(gasto.fecha).toLocaleDateString('es-AR')}</span>
                     </div>
+                    {gasto.comprobante && (
+                      <div className="mt-2">
+                        {gasto.comprobante.endsWith(".pdf") ? (
+                          <a
+                            href={gasto.comprobante}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary underline"
+                          >
+                            Ver comprobante (PDF)
+                          </a>
+                        ) : (
+                          <a href={gasto.comprobante} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={gasto.comprobante}
+                              alt="Comprobante"
+                              className="w-24 h-24 object-cover rounded-md border hover:scale-105 transition-transform"
+                            />
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
