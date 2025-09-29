@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, FileText, PlusCircle, User, Moon, Sun } from "lucide-react";
 import { GastosTab } from "@/components/GastosTab";
 import { ResumenesTab } from "@/components/ResumenesTab";
+import { loadData, saveData, loadDataFromLocalStorage, generateId } from "@/lib/dataStorage";
 
 export interface Gasto {
   id: string;
@@ -23,98 +24,61 @@ export interface Participante {
   activo: boolean;
 }
 
-// Usuario actual simulado (en la app real vendría de la autenticación)
-const USUARIO_ACTUAL = {
-  id: "user-1",
-  nombre: "Juan Pérez",
-  email: "juan@email.com",
-  unidad: "3C"
-};
-
 const Index = () => {
-  // Gastos del grupo (simulando datos existentes de otros miembros)
-  const [gastos, setGastos] = useState<Gasto[]>([
-    {
-      id: "1",
-      descripcion: "Mantenimiento ascensor",
-      monto: 25000,
-      participante: "María González",
-      fecha: "2024-01-15",
-      categoria: "mantenimiento",
-      comprobante: ""
-    },
-    {
-      id: "2", 
-      descripcion: "Pintura hall principal",
-      monto: 85000,
-      participante: "Carlos Rodriguez",
-      fecha: "2024-01-10",
-      categoria: "mejoras",
-      comprobante: ""
-    },
-    {
-      id: "3",
-      descripcion: "Limpieza de tanques de agua",
-      monto: 15000,
-      participante: "Ana Martínez",
-      fecha: "2024-01-08",
-      categoria: "limpieza",
-      comprobante: ""
-    },
-    {
-      id: "4",
-      descripcion: "Arreglo de portón eléctrico",
-      monto: 45000,
-      participante: "Juan Pérez",
-      fecha: "2024-01-05",
-      categoria: "mantenimiento",
-      comprobante: ""
-    }
-  ]);
+  // Estados para los datos
+  const [gastos, setGastos] = useState<Gasto[]>([]);
+  const [participantes, setParticipantes] = useState<Participante[]>([]);
+  const [usuarioActual, setUsuarioActual] = useState({
+    id: "user-1",
+    nombre: "Usuario",
+    email: "usuario@email.com",
+    unidad: "1A"
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Miembros del consorcio (simulando otros usuarios del grupo)
-  const [participantes] = useState<Participante[]>([
-    {
-      id: "1",
-      nombre: "María González",
-      email: "maria@email.com",
-      telefono: "+54 11 1234-5678",
-      unidad: "2A",
-      activo: true
-    },
-    {
-      id: "2",
-      nombre: "Carlos Rodriguez",
-      email: "carlos@email.com",
-      telefono: "+54 11 9876-5432",
-      unidad: "1B",
-      activo: true
-    },
-    {
-      id: "3",
-      nombre: "Ana Martínez",
-      email: "ana@email.com",
-      telefono: "+54 11 5555-1234",
-      unidad: "4D",
-      activo: true
-    },
-    {
-      id: "4",
-      nombre: "Juan Pérez", // Usuario actual
-      email: "juan@email.com",
-      telefono: "+54 11 7777-8888",
-      unidad: "3C",
-      activo: true
-    }
-  ]);
+  // Cargar datos al inicializar el componente
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        setLoading(true);
+        // Intentar cargar desde el archivo JSON primero
+        const data = await loadData();
+        setGastos(data.gastos);
+        setParticipantes(data.participantes);
+        setUsuarioActual(data.usuarioActual);
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+        // Si falla, intentar cargar desde localStorage
+        const dataLocal = loadDataFromLocalStorage();
+        if (dataLocal) {
+          setGastos(dataLocal.gastos);
+          setParticipantes(dataLocal.participantes);
+          setUsuarioActual(dataLocal.usuarioActual);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const agregarGasto = (nuevoGasto: Omit<Gasto, 'id' | 'participante'>) => {
+    cargarDatos();
+  }, []);
+
+  const agregarGasto = async (nuevoGasto: Omit<Gasto, 'id' | 'participante'>) => {
     const gasto: Gasto = {
       ...nuevoGasto,
-      id: Date.now().toString(),
-      participante: USUARIO_ACTUAL.nombre // Siempre el usuario actual
+      id: generateId(),
+      participante: usuarioActual.nombre // Siempre el usuario actual
     };
-    setGastos([...gastos, gasto]);
+    
+    const nuevosGastos = [...gastos, gasto];
+    setGastos(nuevosGastos);
+    
+    // Guardar datos actualizados
+    await saveData({
+      gastos: nuevosGastos,
+      participantes,
+      usuarioActual
+    });
   };
 
   return (
@@ -133,7 +97,7 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <User className="w-4 h-4" />
-              <span>{USUARIO_ACTUAL.nombre} - Unidad {USUARIO_ACTUAL.unidad}</span>
+              <span>{usuarioActual.nombre} - Unidad {usuarioActual.unidad}</span>
             </div>
           </div>
         </div>
@@ -141,40 +105,49 @@ const Index = () => {
 
       <main className="container mx-auto px-6 py-8">
         <div className="max-w-7xl mx-auto">
-          <Tabs defaultValue="gastos" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur-sm border shadow-sm">
-              <TabsTrigger
-                value="gastos"
-                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <PlusCircle className="w-4 h-4" />
-                Mis Gastos
-              </TabsTrigger>
-              <TabsTrigger
-                value="resumenes"
-                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <FileText className="w-4 h-4" />
-                Balance del Grupo
-              </TabsTrigger>
-            </TabsList>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Cargando datos...</p>
+              </div>
+            </div>
+          ) : (
+            <Tabs defaultValue="gastos" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur-sm border shadow-sm">
+                <TabsTrigger
+                  value="gastos"
+                  className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Mis Gastos
+                </TabsTrigger>
+                <TabsTrigger
+                  value="resumenes"
+                  className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <FileText className="w-4 h-4" />
+                  Balance del Grupo
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="gastos" className="space-y-6">
-              <GastosTab
-                gastos={gastos}
-                participantes={participantes}
-                usuarioActual={USUARIO_ACTUAL}
-                onAgregarGasto={agregarGasto}
-              />
-            </TabsContent>
+              <TabsContent value="gastos" className="space-y-6">
+                <GastosTab
+                  gastos={gastos}
+                  participantes={participantes}
+                  usuarioActual={usuarioActual}
+                  onAgregarGasto={agregarGasto}
+                />
+              </TabsContent>
 
-            <TabsContent value="resumenes" className="space-y-6">
-              <ResumenesTab
-                gastos={gastos}
-                participantes={participantes}
-              />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="resumenes" className="space-y-6">
+                <ResumenesTab
+                  gastos={gastos}
+                  participantes={participantes}
+                />
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </main>
     </div>
