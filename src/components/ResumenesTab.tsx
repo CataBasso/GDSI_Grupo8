@@ -1,14 +1,46 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, DollarSign, Users, Receipt, Calendar, PieChart as PieChartIcon } from "lucide-react";
+import { TrendingUp, DollarSign, Users, Receipt, Calendar, PieChart as PieChartIcon, CreditCard } from "lucide-react";
 import type { Gasto, Participante } from "@/pages/Index";
+import type { Pago } from "@/lib/apiService";
 
 interface ResumenesTabProps {
   gastos: Gasto[];
+  pagos: Pago[];
   participantes: Participante[];
+  usuarioActual: {
+    id: string;
+    nombre: string;
+    email: string;
+    unidad: string;
+  };
+  onSaldarGasto?: (deudorId: string, acreedorId: string, monto: number, comprobante: string) => void;
+}
+
+
+interface SaldarMisDeudasDialogProps {
+  usuarioActual: {
+    id: string;
+    nombre: string;
+    email: string;
+    unidad: string;
+  };
+  balanceParticipantes: Array<{
+    id: string;
+    nombre: string;
+    unidad: string;
+    montoBalance: number;
+    debeRecibir: boolean;
+  }>;
+  onSaldar: (deudorId: string, acreedorId: string, monto: number, comprobante: string) => void;
 }
 
 export const getCategoriaColorHex = (categoria: string) => {
@@ -26,11 +58,183 @@ export const getCategoriaColorHex = (categoria: string) => {
 }
 
 
-export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
+const SaldarMisDeudasDialog = ({ usuarioActual, balanceParticipantes, onSaldar }: SaldarMisDeudasDialogProps) => {
+  const [open, setOpen] = useState(false);
+  const [deudasSeleccionadas, setDeudasSeleccionadas] = useState<Record<string, { 
+    seleccionada: boolean; 
+    comprobante: File | null 
+  }>>({});
+
+  // Calcular las deudas específicas del usuario actual
+  const misDeudas = useMemo(() => {
+    const usuarioBalance = balanceParticipantes.find(p => p.id === usuarioActual.id);
+    if (!usuarioBalance || usuarioBalance.debeRecibir || usuarioBalance.montoBalance <= 0) {
+      return [];
+    }
+
+    // Crear deudas específicas basadas en los gastos donde el usuario debe dinero
+    const deudas: Array<{
+      acreedorId: string;
+      acreedorNombre: string;
+      monto: number;
+      descripcion: string;
+    }> = [];
+
+    // Por ahora, crear una deuda general con el balance total
+    // En una implementación más avanzada, se podrían calcular deudas específicas por gasto
+    const acreedores = balanceParticipantes.filter(p => p.debeRecibir && p.montoBalance > 0);
+    
+    if (acreedores.length > 0) {
+      // Distribuir la deuda proporcionalmente entre los acreedores
+      const totalAcreedores = acreedores.reduce((sum, a) => sum + a.montoBalance, 0);
+      acreedores.forEach(acreedor => {
+        const montoProporcional = (acreedor.montoBalance / totalAcreedores) * usuarioBalance.montoBalance;
+        if (montoProporcional > 0.01) { // Solo incluir si es mayor a 1 centavo
+          deudas.push({
+            acreedorId: acreedor.id,
+            acreedorNombre: acreedor.nombre,
+            monto: Math.round(montoProporcional * 100) / 100, // Redondear a 2 decimales
+            descripcion: `Debe $${Math.round(montoProporcional * 100) / 100} a ${acreedor.nombre}`
+          });
+        }
+      });
+    }
+
+    return deudas;
+  }, [usuarioActual.id, balanceParticipantes]);
+
+  const handleSaldar = () => {
+    Object.entries(deudasSeleccionadas).forEach(([acreedorId, { comprobante }]) => {
+      const deuda = misDeudas.find(d => d.acreedorId === acreedorId);
+      if (deuda && comprobante) {
+        onSaldar(usuarioActual.id, acreedorId, deuda.monto, comprobante.name);
+      }
+    });
+    setOpen(false);
+    setDeudasSeleccionadas({});
+  };
+
+  const actualizarComprobante = (acreedorId: string, archivo: File | null) => {
+    setDeudasSeleccionadas(prev => ({
+      ...prev,
+      [acreedorId]: { 
+        ...prev[acreedorId], 
+        comprobante: archivo 
+      }
+    }));
+  };
+
+  const toggleDeuda = (acreedorId: string) => {
+    setDeudasSeleccionadas(prev => ({
+      ...prev,
+      [acreedorId]: { 
+        seleccionada: !prev[acreedorId]?.seleccionada,
+        comprobante: prev[acreedorId]?.comprobante || null
+      }
+    }));
+  };
+
+  if (misDeudas.length === 0) {
+    return null; // No mostrar el botón si no hay deudas
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="default" className="gap-2">
+          <CreditCard className="w-4 h-4" />
+          Liquidar Mis Deudas
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Liquidar Mis Deudas</DialogTitle>
+          <DialogDescription>
+            Selecciona las deudas que quieres liquidar y sube el comprobante de liquidación.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          
+          {misDeudas.map((deuda) => {
+            const deudaSeleccionada = deudasSeleccionadas[deuda.acreedorId] || { seleccionada: false, comprobante: null };
+            const isSelected = deudaSeleccionada.seleccionada;
+            
+            return (
+              <div key={deuda.acreedorId} className={`p-4 border rounded-lg transition-colors ${
+                isSelected ? 'bg-primary/5 border-primary' : 'bg-card'
+              }`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id={`checkbox-${deuda.acreedorId}`}
+                      checked={isSelected}
+                      onChange={() => toggleDeuda(deuda.acreedorId)}
+                      className="w-4 h-4 text-primary"
+                    />
+                    <div>
+                      <h4 className="font-semibold">{deuda.descripcion}</h4>
+                      <p className="text-sm text-muted-foreground">Unidad {balanceParticipantes.find(p => p.id === deuda.acreedorId)?.unidad}</p>
+                    </div>
+                  </div>
+                  <Badge variant={isSelected ? "default" : "outline"}>
+                    {isSelected ? "Seleccionada" : "Pendiente"}
+                  </Badge>
+                </div>
+                
+                {isSelected && (
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor={`comprobante-${deuda.acreedorId}`}>Comprobante de liquidación (foto)</Label>
+                      <Input
+                        id={`comprobante-${deuda.acreedorId}`}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          actualizarComprobante(deuda.acreedorId, file);
+                        }}
+                        className="cursor-pointer"
+                      />
+                      {deudaSeleccionada.comprobante && (
+                        <p className="text-xs text-green-600 mt-1">
+                          ✓ Archivo seleccionado: {deudaSeleccionada.comprobante.name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          
+          <div className="flex gap-2 pt-4">
+            <Button 
+              onClick={handleSaldar} 
+              className="flex-1" 
+              disabled={Object.values(deudasSeleccionadas).every(d => !d.seleccionada || d.comprobante === null)}
+            >
+              Liquidar Deudas Seleccionadas ({Object.values(deudasSeleccionadas).filter(d => d.seleccionada && d.comprobante !== null).length})
+            </Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export const ResumenesTab = ({ gastos, pagos, participantes, usuarioActual, onSaldarGasto }: ResumenesTabProps) => {
   const resumenData = useMemo(() => {
-    const totalGastos = gastos.reduce((sum, gasto) => sum + gasto.monto, 0);
+    // Filtrar solo gastos comunitarios (excluir liquidaciones)
+    const gastosComunitarios = gastos.filter(g => g.categoria !== 'Liquidación');
+    const totalGastos = gastosComunitarios.reduce((sum, gasto) => sum + gasto.monto, 0);
+    
     const gastosPorParticipante = participantes.map(participante => {
-      const gastosDelParticipante = gastos.filter(g => g.participante === participante.nombre);
+      // Solo contar gastos comunitarios para el cálculo de balances
+      const gastosDelParticipante = gastosComunitarios.filter(g => g.participante === participante.nombre);
       const totalGastado = gastosDelParticipante.reduce((sum, g) => sum + g.monto, 0);
       const cantidadGastos = gastosDelParticipante.length;
 
@@ -42,7 +246,7 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
       };
     });
 
-    const gastosPorCategoria = gastos.reduce((acc, gasto) => {
+    const gastosPorCategoria = gastosComunitarios.reduce((acc, gasto) => {
       acc[gasto.categoria] = (acc[gasto.categoria] || 0) + gasto.monto;
       return acc;
     }, {} as Record<string, number>);
@@ -61,13 +265,46 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
 
     // Calcular cuánto debe aportar cada uno (división equitativa)
     const aportePromedioPorParticipante = totalGastos / participantes.length;
-    const balanceParticipantes = gastosPorParticipante.map(p => ({
-      ...p,
-      aporteCorresponde: aportePromedioPorParticipante,
-      balance: p.totalGastado - aportePromedioPorParticipante,
-      debeRecibir: p.totalGastado > aportePromedioPorParticipante,
-      montoBalance: Math.abs(p.totalGastado - aportePromedioPorParticipante)
-    }));
+    
+    // Calcular pagos: pagos realizados y recibidos por participante
+    const pagosPorParticipante = participantes.map(participante => {
+      // Pagos que este participante PAGÓ (reduce su deuda)
+      const pagosRealizados = pagos.filter(p => 
+        p.deudor_id === participante.id
+      );
+      const totalPagado = pagosRealizados.reduce((sum, p) => sum + p.monto, 0);
+      
+      // Pagos que este participante RECIBIÓ (reduce su balance positivo)
+      const pagosRecibidos = pagos.filter(p => 
+        p.acreedor_id === participante.id
+      );
+      const totalRecibido = pagosRecibidos.reduce((sum, p) => sum + p.monto, 0);
+      
+      return {
+        id: participante.id,
+        totalPagado,
+        totalRecibido
+      };
+    });
+    
+    const balanceParticipantes = gastosPorParticipante.map(p => {
+      const pagosParticipante = pagosPorParticipante.find(l => l.id === p.id);
+      const totalPagado = pagosParticipante?.totalPagado || 0;
+      const totalRecibido = pagosParticipante?.totalRecibido || 0;
+      
+      // Balance = (lo que gastó) - (lo que debe aportar) - (lo que pagó) + (lo que recibió)
+      // IMPORTANTE: Los pagos que recibió REDUCEN su balance positivo
+      // Los pagos que hizo REDUCEN su deuda (aumentan su balance)
+      const balance = p.totalGastado - aportePromedioPorParticipante - totalRecibido + totalPagado;
+      
+      return {
+        ...p,
+        aporteCorresponde: aportePromedioPorParticipante,
+        balance: balance,
+        debeRecibir: balance > 0,
+        montoBalance: Math.abs(balance)
+      };
+    });
 
     return {
       totalGastos,
@@ -255,6 +492,8 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
       {/* Balance por participante */}
       <Card className="border-0 shadow-lg">
         <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
             Balance por Participante
@@ -262,6 +501,13 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
           <CardDescription>
             Liquidación mensual - Aportes y compensaciones
           </CardDescription>
+            </div>
+            <SaldarMisDeudasDialog
+              usuarioActual={usuarioActual}
+              balanceParticipantes={resumenData.balanceParticipantes}
+              onSaldar={onSaldarGasto || (() => {})}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {resumenData.balanceParticipantes.length > 0 ? (
@@ -301,6 +547,7 @@ export const ResumenesTab = ({ gastos, participantes }: ResumenesTabProps) => {
                       </div>
                     </div>
                   </div>
+                  
                 </div>
               ))}
             </div>

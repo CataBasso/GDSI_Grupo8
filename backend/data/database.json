@@ -1,0 +1,126 @@
+{
+  "gastos": [
+    {
+      "id": "17598430294708z1r1ten4",
+      "descripcion": "asd",
+      "monto": 12000.0,
+      "fecha": "2025-10-08",
+      "categoria": "mantenimiento",
+      "pagado_por": "1",
+      "participantes": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "creado_por": "1"
+    },
+    {
+      "id": "1759843708743b92l30b4j",
+      "descripcion": "pague la luz",
+      "monto": 12000.0,
+      "fecha": "2025-10-06",
+      "categoria": "jardineria",
+      "pagado_por": "4",
+      "participantes": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "creado_por": "4"
+    },
+    {
+      "id": "1759843792542kpk0wzbhm",
+      "descripcion": "pague la luz",
+      "monto": 12000.0,
+      "fecha": "2025-10-06",
+      "categoria": "jardineria",
+      "pagado_por": "4",
+      "participantes": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "creado_por": "1"
+    },
+    {
+      "id": "1759843792562956zhsra2",
+      "descripcion": "adas",
+      "monto": 1000.0,
+      "fecha": "2025-10-07",
+      "categoria": "mejoras",
+      "pagado_por": "1",
+      "participantes": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "creado_por": "1"
+    }
+  ],
+  "pagos": [
+    {
+      "id": "1759843533845ekfofwpvs",
+      "descripcion": "Pago de deuda a María González",
+      "monto": 3000.0,
+      "fecha": "2025-10-07",
+      "deudor_id": "2",
+      "acreedor_id": "1",
+      "comprobante": "Captura de pantalla 2025-07-04 090622.png",
+      "creado_por": "2"
+    },
+    {
+      "id": "17598436808990g8cjz3ev",
+      "descripcion": "Pago de deuda a María González",
+      "monto": 3000.0,
+      "fecha": "2025-10-07",
+      "deudor_id": "3",
+      "acreedor_id": "1",
+      "comprobante": "Captura de pantalla 2025-07-18 095449.png",
+      "creado_por": "3"
+    }
+  ],
+  "participantes": [
+    {
+      "id": "1",
+      "nombre": "María González",
+      "email": "maria@email.com",
+      "telefono": "+54 11 1234-5678",
+      "unidad": "2A",
+      "activo": true
+    },
+    {
+      "id": "2",
+      "nombre": "Carlos Rodriguez",
+      "email": "carlos@email.com",
+      "telefono": "+54 11 9876-5432",
+      "unidad": "1B",
+      "activo": true
+    },
+    {
+      "id": "3",
+      "nombre": "Ana Martínez",
+      "email": "ana@email.com",
+      "telefono": "+54 11 5555-1234",
+      "unidad": "4D",
+      "activo": true
+    },
+    {
+      "id": "4",
+      "nombre": "Juan Pérez",
+      "email": "juan@email.com",
+      "telefono": "+54 11 7777-8888",
+      "unidad": "3C",
+      "activo": true
+    }
+  ],
+  "usuarioActual": {
+    "id": "1",
+    "nombre": "María González",
+    "email": "maria@email.com",
+    "unidad": "2A"
+  }
+}

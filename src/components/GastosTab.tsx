@@ -226,7 +226,7 @@ export const GastosTab = ({ gastos, usuarioActual, onAgregarGasto }: GastosTabPr
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Cantidad Registrados</p>
+                <p className="text-sm font-medium text-muted-foreground">Tus Registros</p>
                 <p className="text-2xl font-bold text-foreground">{misGastos.length}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">

@@ -6,6 +6,8 @@ import { ResumenesTab } from "@/components/ResumenesTab";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadData, saveData, loadDataFromLocalStorage, generateId } from "@/lib/dataStorage";
+import { checkBackendHealth } from "@/lib/apiService";
+import { pagosAPI, Pago } from "@/lib/apiService";
 import { Button } from "@/components/ui/button";
 
 export interface Gasto {
@@ -32,6 +34,7 @@ const Index = () => {
   
   // Estados para los datos
   const [gastos, setGastos] = useState<Gasto[]>([]);
+  const [pagos, setPagos] = useState<Pago[]>([]);
   const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -43,6 +46,7 @@ const Index = () => {
         // Intentar cargar desde el archivo JSON primero
         const data = await loadData();
         setGastos(data.gastos);
+        setPagos(data.pagos);
         setParticipantes(data.participantes);
       } catch (error) {
         console.error('Error cargando datos:', error);
@@ -50,6 +54,7 @@ const Index = () => {
         const dataLocal = loadDataFromLocalStorage();
         if (dataLocal) {
           setGastos(dataLocal.gastos);
+          setPagos(dataLocal.pagos || []);
           setParticipantes(dataLocal.participantes);
         }
       } finally {
@@ -75,9 +80,44 @@ const Index = () => {
     // Guardar datos actualizados
     await saveData({
       gastos: nuevosGastos,
+      pagos: pagos,
       participantes,
       usuarioActual: usuario
     });
+  };
+
+  const saldarGasto = async (deudorId: string, acreedorId: string, monto: number, comprobante: string = '') => {
+    if (!usuario) return;
+    
+    // Crear un pago entre inquilinos
+    const pago: Pago = {
+      id: generateId(),
+      descripcion: `Pago de deuda a ${participantes.find(p => p.id === acreedorId)?.nombre || 'participante'}`,
+      monto: monto,
+      fecha: new Date().toISOString().split('T')[0],
+      deudor_id: deudorId,
+      acreedor_id: acreedorId,
+      comprobante: comprobante,
+      creado_por: usuario.id
+    };
+    
+    // Guardar el pago en el backend
+    try {
+      const backendAvailable = await checkBackendHealth();
+      if (backendAvailable) {
+        await pagosAPI.create(pago);
+        console.log('Pago guardado en el backend');
+      }
+    } catch (error) {
+      console.error('Error guardando pago:', error);
+    }
+    
+    // Recargar datos para actualizar la interfaz
+    const data = await loadData();
+    setGastos(data.gastos);
+    setPagos(data.pagos);
+    setParticipantes(data.participantes);
+    // setUsuario se maneja automáticamente por el contexto de autenticación
   };
 
   return (
@@ -154,7 +194,10 @@ const Index = () => {
                 <TabsContent value="resumenes" className="space-y-6">
                   <ResumenesTab
                     gastos={gastos}
+                    pagos={pagos}
                     participantes={participantes}
+                    usuarioActual={usuario}
+                    onSaldarGasto={saldarGasto}
                   />
                 </TabsContent>
               </Tabs>
