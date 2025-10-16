@@ -18,7 +18,7 @@ app.add_middleware(
 )
 
 # Ruta del archivo JSON
-DATABASE_FILE = "data/database.json"
+DATABASE_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", "database.json"))
 
 # Modelos Pydantic
 class Participante(BaseModel):
@@ -65,14 +65,20 @@ class Database(BaseModel):
 def load_database() -> Database:
     """Cargar datos desde el archivo JSON"""
     try:
+        print(f"Intentando cargar desde: {DATABASE_FILE}")
+        print(f"Archivo existe: {os.path.exists(DATABASE_FILE)}")
         if os.path.exists(DATABASE_FILE):
             with open(DATABASE_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+                print(f"Datos leídos: {len(data.get('participantes', []))} participantes")
                 return Database(**data)
         else:
+            print("Archivo no existe, retornando base de datos vacía")
             return Database()
     except Exception as e:
         print(f"Error cargando base de datos: {e}")
+        import traceback
+        traceback.print_exc()
         return Database()
 
 def save_database(db: Database):
@@ -327,17 +333,50 @@ async def update_usuario_actual(usuario: UsuarioActual):
     save_database(db)
     return usuario
 
-# Endpoint para obtener toda la base de datos
-@app.get("/database", response_model=Database)
-async def get_database():
-    """Obtener toda la base de datos"""
-    return load_database()
 
 # Endpoint de salud
 @app.get("/health")
 async def health_check():
     """Verificar que el servidor esté funcionando"""
     return {"status": "ok", "message": "Servidor funcionando correctamente"}
+
+# Endpoint de prueba para verificar la carga de datos
+@app.get("/test-db")
+async def test_database():
+    """Endpoint de prueba para verificar la carga de datos"""
+    try:
+        print(f"=== Test DB endpoint ===")
+        print(f"Archivo: {DATABASE_FILE}")
+        print(f"Existe: {os.path.exists(DATABASE_FILE)}")
+        
+        if os.path.exists(DATABASE_FILE):
+            with open(DATABASE_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                print(f"Datos leídos: {len(data.get('participantes', []))} participantes")
+                return {
+                    "status": "ok",
+                    "file_path": DATABASE_FILE,
+                    "file_exists": True,
+                    "participantes_count": len(data.get('participantes', [])),
+                    "gastos_count": len(data.get('gastos', [])),
+                    "data": data
+                }
+        else:
+            return {
+                "status": "error",
+                "file_path": DATABASE_FILE,
+                "file_exists": False,
+                "message": "Archivo no encontrado"
+            }
+    except Exception as e:
+        print(f"Error en test-db: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
 
 if __name__ == "__main__":
     import uvicorn

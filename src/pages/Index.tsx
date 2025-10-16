@@ -5,7 +5,7 @@ import { GastosTab } from "@/components/GastosTab";
 import { ResumenesTab } from "@/components/ResumenesTab";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import { loadData, saveData, loadDataFromLocalStorage, generateId } from "@/lib/dataStorage";
+import { loadData, saveData, generateId } from "@/lib/dataStorage";
 import { checkBackendHealth } from "@/lib/apiService";
 import { pagosAPI, Pago } from "@/lib/apiService";
 import { Button } from "@/components/ui/button";
@@ -43,20 +43,14 @@ const Index = () => {
     const cargarDatos = async () => {
       try {
         setLoading(true);
-        // Intentar cargar desde el archivo JSON primero
         const data = await loadData();
         setGastos(data.gastos);
         setPagos(data.pagos);
         setParticipantes(data.participantes);
       } catch (error) {
         console.error('Error cargando datos:', error);
-        // Si falla, intentar cargar desde localStorage
-        const dataLocal = loadDataFromLocalStorage();
-        if (dataLocal) {
-          setGastos(dataLocal.gastos);
-          setPagos(dataLocal.pagos || []);
-          setParticipantes(dataLocal.participantes);
-        }
+        // Mostrar error al usuario
+        alert('Error al cargar los datos. Asegúrate de que el backend esté ejecutándose en http://localhost:8000');
       } finally {
         setLoading(false);
       }

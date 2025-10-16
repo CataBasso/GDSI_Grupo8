@@ -165,8 +165,21 @@ export const pagosAPI = {
 
 // API para Base de Datos Completa
 export const databaseAPI = {
-  get: (): Promise<Database> => 
-    apiRequest<Database>('/database')
+  get: async (): Promise<Database> => {
+    const [participantes, gastos, pagos, usuarioActual] = await Promise.all([
+      participantesAPI.getAll(),
+      gastosAPI.getAll(),
+      pagosAPI.getAll(),
+      usuarioAPI.get().catch(() => null)
+    ]);
+    
+    return {
+      participantes,
+      gastos,
+      pagos,
+      usuarioActual
+    };
+  }
 };
 
 // Utilidades
