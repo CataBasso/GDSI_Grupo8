@@ -83,7 +83,7 @@ npm run dev
 ## 📋 Funcionalidades Principales
 
 ### ✅ Gestión de Participantes
-- Registro de miembros del consorcio
+- Registro de miembros del consorcio por base de datos
 - Información de contacto y unidad
 - Estado activo/inactivo
 

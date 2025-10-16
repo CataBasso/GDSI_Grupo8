@@ -16,7 +16,18 @@
       "creado_por": "1"
     }
   ],
-  "pagos": [],
+  "pagos": [
+    {
+      "id": "1760637847460mfwgvhnql",
+      "descripcion": "Pago de deuda a María González",
+      "monto": 308.5,
+      "fecha": "2025-10-16",
+      "deudor_id": "2",
+      "acreedor_id": "1",
+      "comprobante": "Captura de pantalla 2025-07-01 081217.png",
+      "creado_por": "2"
+    }
+  ],
   "participantes": [
     {
       "id": "1",
