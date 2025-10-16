@@ -6,6 +6,7 @@
       "monto": 1234.0,
       "fecha": "2025-10-31",
       "categoria": "servicios",
+      "comprobante": null,
       "pagado_por": "1",
       "participantes": [
         "1",
@@ -59,6 +60,36 @@
       "email": "juan@email.com",
       "telefono": "+54 11 7777-8888",
       "unidad": "3C",
+      "activo": true
+    }
+  ],
+  "usuarios": [
+    {
+      "id": "1",
+      "participante_id": "1",
+      "email": "maria@email.com",
+      "password_hash": "$2b$12$zcNbr6W5XP3Jkwp6dEx.VOS5ONBjWqQMvqCDw3mdNUd1gW8KIvNFG",
+      "activo": true
+    },
+    {
+      "id": "2",
+      "participante_id": "2",
+      "email": "carlos@email.com",
+      "password_hash": "$2b$12$I.vdYpqZXlVatEwnmk49WubcA0v/9A8izhebT/glKAaznx5l6Sd5C",
+      "activo": true
+    },
+    {
+      "id": "3",
+      "participante_id": "3",
+      "email": "ana@email.com",
+      "password_hash": "$2b$12$ltmNMiH.BuTGUnFdsusfPedc0qSUFHdBtVQj0wR9mRkvO1G23BDMu",
+      "activo": true
+    },
+    {
+      "id": "4",
+      "participante_id": "4",
+      "email": "juan@email.com",
+      "password_hash": "$2b$12$L9zfG7GOn1eQaIU.0xKKWOThbktQn6OBXj6ekpGO.E650jk6o1wdC",
       "activo": true
     }
   ],

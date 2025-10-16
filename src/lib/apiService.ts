@@ -19,6 +19,7 @@ export interface Gasto {
   pagado_por: string;
   participantes: string[];
   creado_por: string;
+  comprobante?: string | null;
 }
 
   export interface Pago {

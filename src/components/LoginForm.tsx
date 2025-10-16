@@ -9,17 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 
 interface LoginFormProps {
   onLogin: (usuario: { id: string; nombre: string; email: string; unidad: string }) => void;
-  participantes: Array<{
-    id: string;
-    nombre: string;
-    email: string;
-    telefono: string;
-    unidad: string;
-    activo: boolean;
-  }>;
 }
 
-export const LoginForm = ({ onLogin, participantes }: LoginFormProps) => {
+export const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -34,33 +26,27 @@ export const LoginForm = ({ onLogin, participantes }: LoginFormProps) => {
     setLoading(true);
 
     try {
-      // Buscar usuario por email
-      const usuario = participantes.find(p => p.email === formData.email);
-      
-      if (!usuario) {
-        setError("Usuario no encontrado");
-        return;
-      }
+      const response = await fetch('http://localhost:8000/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
 
-      // Verificar contraseña (en una app real, esto sería más seguro)
-      const passwordCorrecta = verificarPassword(usuario.email, formData.password);
-      
-      if (!passwordCorrecta) {
-        setError("Contraseña incorrecta");
+      const data = await response.json();
+
+      if (!data.success) {
+        setError(data.message);
         return;
       }
 
       // Login exitoso
-      onLogin({
-        id: usuario.id,
-        nombre: usuario.nombre,
-        email: usuario.email,
-        unidad: usuario.unidad
-      });
+      onLogin(data.usuario);
 
       toast({
         title: "¡Bienvenido!",
-        description: `Hola ${usuario.nombre}, has iniciado sesión correctamente`
+        description: `Hola ${data.usuario.nombre}, has iniciado sesión correctamente`
       });
 
     } catch (error) {
@@ -68,19 +54,6 @@ export const LoginForm = ({ onLogin, participantes }: LoginFormProps) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Función simple de verificación de contraseña (en producción usar hash)
-  const verificarPassword = (email: string, password: string): boolean => {
-    // Contraseñas por defecto para cada usuario (en producción usar hash)
-    const passwords: Record<string, string> = {
-      "maria@email.com": "maria123",
-      "carlos@email.com": "carlos123", 
-      "ana@email.com": "ana123",
-      "juan@email.com": "juan123"
-    };
-    
-    return passwords[email] === password;
   };
 
   return (
@@ -97,7 +70,7 @@ export const LoginForm = ({ onLogin, participantes }: LoginFormProps) => {
             </CardDescription>
           </div>
         </CardHeader>
-        
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -139,8 +112,8 @@ export const LoginForm = ({ onLogin, participantes }: LoginFormProps) => {
               </Alert>
             )}
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary"
               disabled={loading}
             >
@@ -151,10 +124,6 @@ export const LoginForm = ({ onLogin, participantes }: LoginFormProps) => {
           <div className="mt-6 p-4 bg-muted/50 rounded-lg">
             <h4 className="text-sm font-medium mb-2">Usuarios de prueba:</h4>
             <div className="space-y-1 text-xs text-muted-foreground">
-              <div>• maria@email.com / maria123</div>
-              <div>• carlos@email.com / carlos123</div>
-              <div>• ana@email.com / ana123</div>
-              <div>• juan@email.com / juan123</div>
             </div>
           </div>
         </CardContent>

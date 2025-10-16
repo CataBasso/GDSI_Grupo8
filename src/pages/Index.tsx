@@ -17,7 +17,7 @@ export interface Gasto {
   participante: string;
   fecha: string;
   categoria: string;
-  comprobante: string
+  comprobante?: string | null
 }
 
 export interface Participante {

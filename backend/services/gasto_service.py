@@ -75,11 +75,24 @@ class GastoService:
                     status_code=400, 
                     detail=f"El participante {participante_id} no existe"
                 )
-        
+
+        comprobante = gasto_data.comprobante
+
+        # Convertir valores vacíos o None a None
+        if not comprobante:
+            comprobante = None
+
         # Crear el gasto
         gasto = Gasto(
             id=gasto_id,
-            **gasto_data.model_dump()
+            descripcion=gasto_data.descripcion,
+            monto=gasto_data.monto,
+            fecha=gasto_data.fecha,
+            categoria=gasto_data.categoria,
+            comprobante=comprobante,
+            pagado_por=gasto_data.pagado_por,
+            participantes=gasto_data.participantes,
+            creado_por=gasto_data.creado_por
         )
         
         db.gastos.append(gasto)

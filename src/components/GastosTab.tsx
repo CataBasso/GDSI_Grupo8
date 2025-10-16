@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, DollarSign, User, Plus, Receipt } from "lucide-react";
+import { CalendarDays, DollarSign, User, Plus, Receipt, Upload, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Gasto, Participante } from "@/pages/Index";
+
 interface GastosTabProps {
   gastos: Gasto[];
   participantes: Participante[];
@@ -42,51 +43,130 @@ export const getCategoriaColorClass = (categoria: string) => {
   return classColors[categoria] || classColors.otros;
 }
 
-
 export const GastosTab = ({ gastos, usuarioActual, onAgregarGasto }: GastosTabProps) => {
   const [open, setOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     descripcion: "",
     monto: "",
     fecha: "",
     categoria: "",
-    comprobante: ""
+    comprobante: null as File | null
   });
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setFormData({ ...formData, comprobante: file });
+  };
+
+  const handleRemoveFile = () => {
+    setFormData({ ...formData, comprobante: null });
+    // Limpiar el input file
+    const fileInput = document.getElementById('comprobante') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploading(true);
+
+    console.log('📤 Archivo a subir:', formData.comprobante?.name);
 
     if (!formData.descripcion || !formData.monto || !formData.fecha || !formData.categoria) {
       toast({
         title: "Error",
-        description: "Por favor completa todos los campos",
+        description: "Por favor completa todos los campos obligatorios",
         variant: "destructive"
       });
+      setUploading(false);
       return;
     }
 
-    onAgregarGasto({
+    let comprobanteFilename = null;
+
+    // Si hay archivo, subirlo primero
+    if (formData.comprobante) {
+      try {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', formData.comprobante);
+
+        const uploadResponse = await fetch('http://localhost:8000/upload/comprobante', {
+          method: 'POST',
+          body: uploadFormData
+        });
+
+        const uploadResult = await uploadResponse.json();
+
+        if (uploadResult.success) {
+          comprobanteFilename = uploadResult.filename;
+        } else {
+          throw new Error(uploadResult.message || 'Error al subir archivo');
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        toast({
+          title: "Error",
+          description: "Error al subir el comprobante. Intenta nuevamente.",
+          variant: "destructive"
+        });
+        setUploading(false);
+        return;
+      }
+    }
+
+
+    // Crear el gasto con el nombre del archivo guardado o null
+    const gastoData = {
       descripcion: formData.descripcion,
       monto: parseFloat(formData.monto),
       fecha: formData.fecha,
       categoria: formData.categoria,
-      comprobante: formData.comprobante
-    });
+      comprobante: comprobanteFilename,
+      pagado_por: usuarioActual.id,
+      participantes: [usuarioActual.id], // O los participantes seleccionados
+      creado_por: usuarioActual.id
+    };
 
-    setFormData({
-      descripcion: "",
-      monto: "",
-      fecha: "",
-      categoria: "",
-      comprobante: ""
-    });
+    try {
+      onAgregarGasto(gastoData);
 
-    setOpen(false);
-    toast({
-      title: "Gasto agregado",
-      description: "Tu gasto se registró correctamente en el grupo"
-    });
+      console.log('✅ onAgregarGasto llamado exitosamente');
+
+      // Reset form
+      setFormData({
+        descripcion: "",
+        monto: "",
+        fecha: "",
+        categoria: "",
+        comprobante: null
+      });
+
+      // Limpiar el input file
+      const fileInput = document.getElementById('comprobante') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+
+      setOpen(false);
+      toast({
+        title: "¡Gasto agregado!",
+        description: comprobanteFilename 
+          ? "Tu gasto se registró correctamente con comprobante" 
+          : "Tu gasto se registró correctamente"
+      });
+    } catch (error) {
+      console.error('Error creating gasto:', error);
+      toast({
+        title: "Error",
+        description: "Error al crear el gasto. Intenta nuevamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const totalGastos = gastos.reduce((sum, gasto) => sum + gasto.monto, 0);
@@ -116,17 +196,19 @@ export const GastosTab = ({ gastos, usuarioActual, onAgregarGasto }: GastosTabPr
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="descripcion">Descripción</Label>
+                <Label htmlFor="descripcion">Descripción *</Label>
                 <Textarea
                   id="descripcion"
                   placeholder="Describe el gasto..."
                   value={formData.descripcion}
                   onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                  disabled={uploading}
                 />
               </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="monto">Monto ($)</Label>
+                  <Label htmlFor="monto">Monto ($) *</Label>
                   <Input
                     id="monto"
                     type="number"
@@ -134,18 +216,21 @@ export const GastosTab = ({ gastos, usuarioActual, onAgregarGasto }: GastosTabPr
                     placeholder="0.00"
                     value={formData.monto}
                     onChange={(e) => setFormData({...formData, monto: e.target.value})}
+                    disabled={uploading}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fecha">Fecha</Label>
+                  <Label htmlFor="fecha">Fecha *</Label>
                   <Input
                     id="fecha"
                     type="date"
                     value={formData.fecha}
                     onChange={(e) => setFormData({...formData, fecha: e.target.value})}
+                    disabled={uploading}
                   />
                 </div>
               </div>
+
               <div className="p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2 text-sm">
                   <User className="w-4 h-4 text-muted-foreground" />
@@ -153,9 +238,14 @@ export const GastosTab = ({ gastos, usuarioActual, onAgregarGasto }: GastosTabPr
                   <span className="font-medium">{usuarioActual.nombre} - Unidad {usuarioActual.unidad}</span>
                 </div>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="categoria">Categoría</Label>
-                <Select value={formData.categoria} onValueChange={(value) => setFormData({...formData, categoria: value})}>
+                <Label htmlFor="categoria">Categoría *</Label>
+                <Select 
+                  value={formData.categoria} 
+                  onValueChange={(value) => setFormData({...formData, categoria: value})}
+                  disabled={uploading}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
@@ -168,23 +258,82 @@ export const GastosTab = ({ gastos, usuarioActual, onAgregarGasto }: GastosTabPr
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="comprobante">Comprobante (opcional)</Label>
-                <Input
-                  id="comprobante"
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const url = URL.createObjectURL(file);
-                      setFormData({ ...formData, comprobante: url });
-                    }
-                  }}
-                />
+                <div className="space-y-3">
+                  {/* Input file personalizado */}
+                  <div className="relative">
+                    <input
+                      id="comprobante"
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={handleFileChange}
+                      disabled={uploading}
+                      className="sr-only" // Ocultar el input nativo
+                    />
+                    <label
+                      htmlFor="comprobante"
+                      className={`
+                        flex items-center justify-center gap-2 w-full px-4 py-3 
+                        border-2 border-dashed rounded-lg cursor-pointer transition-colors
+                        ${formData.comprobante 
+                          ? 'border-primary bg-primary/5 text-primary' 
+                          : 'border-gray-300 hover:border-primary hover:bg-primary/5'
+                        }
+                        ${uploading ? 'opacity-50 cursor-not-allowed' : ''}
+                      `}
+                    >
+                      <Upload className="w-5 h-5" />
+                      <span className="text-sm font-medium">
+                        {formData.comprobante ? 'Cambiar archivo' : 'Seleccionar archivo'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {formData.comprobante && (
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md border">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          {formData.comprobante.type?.startsWith('image/') ? (
+                            <span className="text-xs font-bold text-primary">IMG</span>
+                          ) : (
+                            <span className="text-xs font-bold text-primary">PDF</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {formData.comprobante.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {(formData.comprobante.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveFile}
+                        disabled={uploading}
+                        className="h-8 w-8 p-0 flex-shrink-0 ml-2"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <Button type="submit" className="w-full">
-                Registrar Gasto
+
+              <Button type="submit" className="w-full" disabled={uploading}>
+                {uploading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    {formData.comprobante ? "Subiendo archivo..." : "Guardando..."}
+                  </div>
+                ) : (
+                  "Registrar Gasto"
+                )}
               </Button>
             </form>
           </DialogContent>
@@ -286,29 +435,43 @@ export const GastosTab = ({ gastos, usuarioActual, onAgregarGasto }: GastosTabPr
                       <CalendarDays className="w-4 h-4" />
                       <span>{new Date(gasto.fecha).toLocaleDateString('es-AR')}</span>
                     </div>
-                    {gasto.comprobante && (
-                      <div className="mt-2">
-                        {gasto.comprobante.endsWith(".pdf") ? (
-                          <a
-                            href={gasto.comprobante}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-primary underline"
-                          >
-                            Ver comprobante (PDF)
-                          </a>
-                        ) : (
-                          <a href={gasto.comprobante} target="_blank" rel="noopener noreferrer">
-                            <img
-                              src={gasto.comprobante}
-                              alt="Comprobante"
-                              className="w-24 h-24 object-cover rounded-md border hover:scale-105 transition-transform"
-                            />
-                          </a>
-                        )}
-                      </div>
-                    )}
                   </div>
+                  {gasto.comprobante && (
+                    <div className="mt-3">
+                      {gasto.comprobante.endsWith(".pdf") ? (
+                        <a
+                          href={`http://localhost:8000/upload/comprobante/${gasto.comprobante}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-sm text-primary underline hover:text-primary/80"
+                        >
+                          <Receipt className="w-4 h-4" />
+                          Ver comprobante (PDF)
+                        </a>
+                      ) : (
+                        <a 
+                          href={`http://localhost:8000/upload/comprobante/${gasto.comprobante}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-block"
+                        >
+                          <img
+                            src={`http://localhost:8000/upload/comprobante/${gasto.comprobante}`}
+                            alt="Comprobante"
+                            className="w-32 h-32 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer shadow-sm"
+                            onError={(e) => {
+                              // Fallback si la imagen no se puede cargar
+                              e.currentTarget.style.display = 'none';
+                              const parent = e.currentTarget.parentNode as HTMLElement;
+                              if (parent) {
+                                parent.innerHTML = '<span class="text-sm text-muted-foreground">Comprobante no disponible</span>';
+                              }
+                            }}
+                          />
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

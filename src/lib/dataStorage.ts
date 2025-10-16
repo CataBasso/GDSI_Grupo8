@@ -33,7 +33,7 @@ export const loadData = async (): Promise<DataStorage> => {
           participante: nombreParticipante, // Convertir a formato del frontend
           fecha: gasto.fecha,
           categoria: gasto.categoria,
-          comprobante: '' // Campo requerido por el frontend
+          comprobante: gasto.comprobante || null // Manejar comprobante nulo
         };
       }),
       pagos: data.pagos || [],
@@ -94,7 +94,8 @@ export const saveData = async (data: DataStorage): Promise<void> => {
           categoria: gasto.categoria,
           pagado_por: participanteId,
           participantes: participantesInvolucrados,
-          creado_por: data.usuarioActual.id
+          creado_por: data.usuarioActual.id,
+          comprobante: gasto.comprobante
         });
       }
     }

@@ -22,6 +22,7 @@ class Gasto(BaseModel):
     monto: float
     fecha: str
     categoria: str
+    comprobante: Optional[str] = None  # Comprobante del gasto
     pagado_por: str  # ID del participante
     participantes: List[str]  # Lista de IDs de participantes que deben pagar
     creado_por: str  # ID del usuario que creó el gasto
@@ -46,14 +47,21 @@ class UsuarioActual(BaseModel):
     email: EmailStr
     unidad: str
 
+class Usuario(BaseModel):
+    """Modelo para usuarios del sistema"""
+    id: str
+    participante_id: str
+    email: str
+    password_hash: str
+    activo: bool = True
 
 class Database(BaseModel):
     """Modelo para la base de datos completa"""
     gastos: List[Gasto] = []
     pagos: List[Pago] = []
     participantes: List[Participante] = []
+    usuarios: List[Usuario] = []
     usuarioActual: Optional[UsuarioActual] = None
-
 
 # Modelos para requests de creación (sin ID)
 class ParticipanteCreate(BaseModel):
@@ -64,17 +72,16 @@ class ParticipanteCreate(BaseModel):
     unidad: str
     activo: bool = True
 
-
 class GastoCreate(BaseModel):
     """Modelo para crear un nuevo gasto"""
     descripcion: str
     monto: float
     fecha: str
     categoria: str
+    comprobante: Optional[str] = None
     pagado_por: str
     participantes: List[str]
     creado_por: str
-
 
 class PagoCreate(BaseModel):
     """Modelo para crear un nuevo pago"""
@@ -86,10 +93,21 @@ class PagoCreate(BaseModel):
     comprobante: str
     creado_por: str
 
-
 class UsuarioActualUpdate(BaseModel):
     """Modelo para actualizar el usuario actual"""
     id: str
     nombre: str
     email: EmailStr
     unidad: str
+
+class LoginRequest(BaseModel):
+    """Modelo para solicitud de login"""
+    email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    """Modelo para respuesta de login"""
+    success: bool
+    message: str
+    usuario: Optional[dict] = None
+    token: Optional[str] = None

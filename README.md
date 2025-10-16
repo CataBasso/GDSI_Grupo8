@@ -161,6 +161,9 @@ python -m uvicorn main:app --reload  # Servidor con recarga automática
 
 ## 🌐 API Endpoints
 
+### Usuarios
+- `POST /login` - Iniciar sesión
+
 ### Participantes
 - `GET /participantes` - Listar todos los participantes
 - `POST /participantes` - Crear nuevo participante
@@ -185,11 +188,14 @@ python -m uvicorn main:app --reload  # Servidor con recarga automática
 ### Utilidades
 - `GET /usuario-actual` - Obtener usuario actual
 - `PUT /usuario-actual` - Actualizar usuario actual
+- `POST /upload/comprobante` - Cargar comprobante
+- `POST /upload/comprobante/{filename}` - Obtener comprobante
 - `GET /health` - Estado del servidor
 
 ## 📊 Persistencia de Datos
 
 Los datos se almacenan en un archivo JSON (`backend/data/database.json`) que incluye:
+- Lista de usuarios
 - Lista de participantes
 - Historial de gastos
 - Registro de pagos
@@ -210,25 +216,6 @@ Los servidores se ejecutan en:
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:8000`
 
-### Producción
-Para desplegar en producción:
-1. Build del frontend: `npm run build`
-2. Servir archivos estáticos desde el backend
-3. Configurar variables de entorno
-4. Usar base de datos real (PostgreSQL, MySQL, etc.)
-
-## 🤝 Contribución
-
-1. Fork del repositorio
-2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear Pull Request
-
 ## 📝 Licencia
 
 Este proyecto es parte del Trabajo Práctico de la materia GDSI (Gestión de Datos y Sistemas de Información).
-
-## 🆘 Soporte
-
-Para reportar bugs o solicitar funcionalidades, crear un issue en el repositorio del proyecto.
