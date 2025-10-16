@@ -120,12 +120,6 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
               {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
             </Button>
           </form>
-
-          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-            <h4 className="text-sm font-medium mb-2">Usuarios de prueba:</h4>
-            <div className="space-y-1 text-xs text-muted-foreground">
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
