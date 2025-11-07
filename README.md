@@ -5,7 +5,7 @@ Una aplicación web moderna para administrar gastos compartidos en consorcios au
 ## 👥 Integrantes del Grupo 8
 
 - **Catalina Basso**
-- **Abril Giordano Hoyo** 
+- **Abril Giordano Hoyo**
 - **Cristobal Alvarez**
 - **Mateo Castaño**
 - **Alejandro Paff**
@@ -51,7 +51,7 @@ npm run dev
 ```
 
 5. **Acceder a la aplicación:**
-- **Frontend:** http://localhost:5173
+- **Frontend:** http://localhost:8081
 - **Backend API:** http://localhost:8000
 - **Documentación API:** http://localhost:8000/docs
 

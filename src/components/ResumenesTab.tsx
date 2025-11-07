@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -227,11 +226,11 @@ const SaldarMisDeudasDialog = ({ usuarioActual, balanceParticipantes, onSaldar }
 };
 
 export const ResumenesTab = ({ gastos, pagos, participantes, usuarioActual, onSaldarGasto }: ResumenesTabProps) => {
-  const resumenData = useMemo(() => {
+    const resumenData = useMemo(() => {
     // Filtrar solo gastos comunitarios (excluir liquidaciones)
     const gastosComunitarios = gastos.filter(g => g.categoria !== 'Liquidación');
     const totalGastos = gastosComunitarios.reduce((sum, gasto) => sum + gasto.monto, 0);
-    
+
     const gastosPorParticipante = participantes.map(participante => {
       // Solo contar gastos comunitarios para el cálculo de balances
       const gastosDelParticipante = gastosComunitarios.filter(g => g.participante === participante.nombre);
@@ -265,7 +264,7 @@ export const ResumenesTab = ({ gastos, pagos, participantes, usuarioActual, onSa
 
     // Calcular cuánto debe aportar cada uno (división equitativa)
     const aportePromedioPorParticipante = totalGastos / participantes.length;
-    
+
     // Calcular pagos: pagos realizados y recibidos por participante
     const pagosPorParticipante = participantes.map(participante => {
       // Pagos que este participante PAGÓ (reduce su deuda)
@@ -273,35 +272,39 @@ export const ResumenesTab = ({ gastos, pagos, participantes, usuarioActual, onSa
         p.deudor_id === participante.id
       );
       const totalPagado = pagosRealizados.reduce((sum, p) => sum + p.monto, 0);
-      
+
       // Pagos que este participante RECIBIÓ (reduce su balance positivo)
       const pagosRecibidos = pagos.filter(p => 
         p.acreedor_id === participante.id
       );
       const totalRecibido = pagosRecibidos.reduce((sum, p) => sum + p.monto, 0);
-      
+
       return {
         id: participante.id,
         totalPagado,
         totalRecibido
       };
     });
-    
+
     const balanceParticipantes = gastosPorParticipante.map(p => {
       const pagosParticipante = pagosPorParticipante.find(l => l.id === p.id);
       const totalPagado = pagosParticipante?.totalPagado || 0;
       const totalRecibido = pagosParticipante?.totalRecibido || 0;
-      
-      // Balance = (lo que gastó) - (lo que debe aportar) - (lo que pagó) + (lo que recibió)
-      // IMPORTANTE: Los pagos que recibió REDUCEN su balance positivo
-      // Los pagos que hizo REDUCEN su deuda (aumentan su balance)
-      const balance = p.totalGastado - aportePromedioPorParticipante - totalRecibido + totalPagado;
-      
+
+      // ✅ Cálculo corregido
+      // Balance inicial: lo que gastó menos lo que debía aportar
+      // Ajuste por pagos: 
+      // - Si pagó (deudor), su deuda baja → aumenta su balance
+      // - Si recibió (acreedor), su crédito baja → disminuye su balance
+      const balanceInicial = p.totalGastado - aportePromedioPorParticipante;
+      const balance = balanceInicial - totalRecibido + totalPagado;
+
       return {
         ...p,
         aporteCorresponde: aportePromedioPorParticipante,
-        balance: balance,
+        balance,
         debeRecibir: balance > 0,
+        debeAportar: balance < 0,
         montoBalance: Math.abs(balance)
       };
     });
@@ -316,7 +319,7 @@ export const ResumenesTab = ({ gastos, pagos, participantes, usuarioActual, onSa
       balanceParticipantes,
       aportePromedioPorParticipante
     };
-  }, [gastos, participantes]);
+  }, [gastos, participantes, pagos]);
 
   const gastosMesActual = gastos.filter(g => {
     const fechaGasto = new Date(g.fecha);
@@ -519,11 +522,24 @@ export const ResumenesTab = ({ gastos, pagos, participantes, usuarioActual, onSa
                       <h4 className="font-semibold text-foreground">{participante.nombre}</h4>
                       <p className="text-sm text-muted-foreground">Unidad {participante.unidad}</p>
                     </div>
-                    <Badge variant={participante.debeRecibir ? "default" : "destructive"}>
-                      {participante.debeRecibir ? "Debe recibir" : "Debe aportar"}
-                    </Badge>
+                    {(participante.debeRecibir || participante.debeAportar) && (
+                      <Badge
+                        variant={
+                          participante.debeRecibir
+                            ? "default"
+                            : participante.debeAportar
+                            ? "default"
+                            : "destructive"
+                        }
+                      >
+                        {participante.debeRecibir
+                          ? "Debe recibir"
+                          : participante.debeAportar
+                          ? "Debe aportar"
+                          : ""}
+                      </Badge>
+                    )}
                   </div>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">Gastó</p>
@@ -535,8 +551,19 @@ export const ResumenesTab = ({ gastos, pagos, participantes, usuarioActual, onSa
                     </div>
                     <div>
                       <p className="text-muted-foreground">Balance</p>
-                      <p className={`font-semibold ${participante.debeRecibir ? 'text-success' : 'text-destructive'}`}>
-                        {participante.debeRecibir ? '+' : '-'}${participante.montoBalance.toLocaleString('es-AR')}
+                      <p className={`font-semibold ${
+                          participante.debeRecibir
+                            ? 'text-success'
+                            : participante.debeAportar
+                            ? 'text-destructive'
+                            : 'text-default'
+                        }`}
+                      >
+                        {participante.debeRecibir
+                          ? `+${participante.montoBalance.toLocaleString('es-AR')}`
+                          : participante.debeAportar
+                          ? `-${participante.montoBalance.toLocaleString('es-AR')}`
+                          : '0'}
                       </p>
                     </div>
                     <div>
@@ -547,7 +574,7 @@ export const ResumenesTab = ({ gastos, pagos, participantes, usuarioActual, onSa
                       </div>
                     </div>
                   </div>
-                  
+
                 </div>
               ))}
             </div>

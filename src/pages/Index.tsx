@@ -82,7 +82,7 @@ const Index = () => {
 
   const saldarGasto = async (deudorId: string, acreedorId: string, monto: number, comprobante: string = '') => {
     if (!usuario) return;
-    
+
     // Crear un pago entre inquilinos
     const pago: Pago = {
       id: generateId(),
@@ -94,7 +94,7 @@ const Index = () => {
       comprobante: comprobante,
       creado_por: usuario.id
     };
-    
+
     // Guardar el pago en el backend
     try {
       const backendAvailable = await checkBackendHealth();
@@ -105,7 +105,7 @@ const Index = () => {
     } catch (error) {
       console.error('Error guardando pago:', error);
     }
-    
+
     // Recargar datos para actualizar la interfaz
     const data = await loadData();
     setGastos(data.gastos);

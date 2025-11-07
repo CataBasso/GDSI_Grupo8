@@ -1,34 +1,6 @@
 {
-  "gastos": [
-    {
-      "id": "1760636372280eu49ano8p",
-      "descripcion": "prueba",
-      "monto": 1234.0,
-      "fecha": "2025-10-31",
-      "categoria": "servicios",
-      "comprobante": null,
-      "pagado_por": "1",
-      "participantes": [
-        "1",
-        "2",
-        "3",
-        "4"
-      ],
-      "creado_por": "1"
-    }
-  ],
-  "pagos": [
-    {
-      "id": "1760637847460mfwgvhnql",
-      "descripcion": "Pago de deuda a María González",
-      "monto": 308.5,
-      "fecha": "2025-10-16",
-      "deudor_id": "2",
-      "acreedor_id": "1",
-      "comprobante": "Captura de pantalla 2025-07-01 081217.png",
-      "creado_por": "2"
-    }
-  ],
+  "gastos": [],
+  "pagos": [],
   "participantes": [
     {
       "id": "1",
